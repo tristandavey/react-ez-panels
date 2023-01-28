@@ -115,17 +115,3 @@ export const MaxSize = () => (
     </PanelGroup>
   </div>
 );
-
-export const MinSizeSnap = () => (
-  <div className="panel-group-wrapper">
-    <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel" minSize={0} minSizeSnap={20}>
-        <div className="panel__content">Min Size 0%, Snap 20%</div>
-      </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel" minSize={20} minSizeSnap={10}>
-        <div className="panel__content">Min Size 20%, Snap 10%</div>
-      </Panel>
-    </PanelGroup>
-  </div>
-);

@@ -25,8 +25,7 @@ export function calculatePanelSizes(
       }
 
       const startPanelMinSize = startPanel.minSize;
-      const startPanelSnapSize = startPanel.minSizeSnap;
-      const endPanelMinSize = endPanel.minSizeSnap;
+      const endPanelMinSize = endPanel.minSize;
       const endPanelMaxSize = endPanel.maxSize;
 
       const startPanelDelta = Math.min(
@@ -34,23 +33,19 @@ export function calculatePanelSizes(
         startPanelSize - startPanelMinSize
       );
 
-      const endPanelDelta = Math.min(
+      let endPanelDelta = Math.min(
         remainingDelta,
         endPanelMaxSize - endPanelSize
       );
 
       let actualDelta = Math.min(startPanelDelta, endPanelDelta);
 
-      const startSnapThreshold = startPanelMinSize + startPanelSnapSize;
-
-      if (startPanelSize - startPanelDelta <= startSnapThreshold) {
+      if (startPanelSize - startPanelDelta <= startPanelMinSize) {
         actualDelta = startPanelSize - startPanelMinSize;
       }
 
-      const endSnapThreshold = endPanelMinSize + endPanel.minSizeSnap;
-
-      if (endPanelSize - endPanelDelta <= endSnapThreshold) {
-        actualDelta = endPanelMinSize + endSnapThreshold - endPanelSize;
+      if (endPanelSize + endPanelDelta <= endPanelMinSize) {
+        actualDelta = endPanelMinSize - endPanelSize;
       }
 
       nextPanelSizes[startPanelIndex] -= actualDelta;
@@ -96,16 +91,12 @@ export function calculatePanelSizes(
 
       let actualDelta = Math.min(startPanelDelta, endPanelDelta);
 
-      const endSnapThreshold = endPanelMinSize + endPanel.minSizeSnap;
-
-      if (endPanelSize - endPanelDelta <= endSnapThreshold) {
+      if (endPanelSize - endPanelDelta <= endPanelMinSize) {
         actualDelta = endPanelSize - endPanelMinSize;
       }
 
-      const startSnapThreshold = startPanelMinSize + startPanel.minSizeSnap;
-
-      if (startPanelSize + startPanelDelta <= startSnapThreshold) {
-        actualDelta = startPanelMinSize + startSnapThreshold - startPanelSize;
+      if (startPanelSize + startPanelDelta <= startPanelMinSize) {
+        actualDelta = startPanelMinSize - startPanelSize;
       }
 
       nextPanelSizes[startPanelIndex] += actualDelta;

@@ -45,7 +45,6 @@ const PanelGroupContext = createContext<PanelGroupContextSchema>({
 export interface InternalPanelData {
   id: string;
   minSize: number;
-  minSizeSnap: number;
   maxSize: number;
   initialSize?: number;
 }
@@ -169,7 +168,6 @@ export interface PanelProps {
   id: string;
   initialSize?: number;
   minSize?: number;
-  minSizeSnap?: number;
   maxSize?: number;
   children?: ReactNode;
   style?: CSSProperties;
@@ -177,23 +175,14 @@ export interface PanelProps {
 }
 
 export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
-  {
-    id,
-    children,
-    initialSize,
-    minSize = 0,
-    minSizeSnap = 0,
-    maxSize = 100,
-    style,
-    ...props
-  },
+  { id, children, initialSize, minSize = 0, maxSize = 100, style, ...props },
   ref
 ) {
   const { registerPanel, unregisterPanel, panels, panelSizes, direction } =
     useContext(PanelGroupContext);
 
   useEffect(() => {
-    registerPanel(id, { id, initialSize, minSize, minSizeSnap, maxSize });
+    registerPanel(id, { id, initialSize, minSize, maxSize });
 
     return () => {
       unregisterPanel(id);
@@ -289,12 +278,6 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
       {
         target: splitterRef,
         enabled: !disabled,
-        // bounds: {
-        //   left: 0,
-        //   right: 100,
-        //   top: 0,
-        //   bottom: 0,
-        // },
       }
     );
 
