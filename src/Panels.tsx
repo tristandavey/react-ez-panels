@@ -1,4 +1,4 @@
-import { useDrag } from "@use-gesture/react";
+import { Bounds, useDrag } from "@use-gesture/react";
 import {
   createContext,
   CSSProperties,
@@ -26,8 +26,8 @@ interface PanelGroupContextSchema {
   registerPanel: (id: string, data: InternalPanelData) => void;
   unregisterPanel: (id: string) => void;
   registerSplitter: (id: string) => void;
-  adjustSplitterByStep: (id: string, step: number) => void;
   adjustSplitterByDelta: (id: string, delta: number) => void;
+  calculateSplitterBounds: (id: string) => Bounds | undefined;
 }
 
 const PanelGroupContext = createContext<PanelGroupContextSchema>({
@@ -38,8 +38,8 @@ const PanelGroupContext = createContext<PanelGroupContextSchema>({
   registerPanel: () => undefined,
   unregisterPanel: () => undefined,
   registerSplitter: () => undefined,
-  adjustSplitterByStep: () => undefined,
   adjustSplitterByDelta: () => undefined,
+  calculateSplitterBounds: () => undefined,
 });
 
 export interface InternalPanelData {
@@ -92,8 +92,15 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
       });
     }, []);
 
-    const adjustSplitterByStep = useCallback(
+    const adjustSplitterByDelta = useCallback(
       (id: string, delta: number) => {
+        const size =
+          direction === "horizontal"
+            ? groupRef.current?.clientWidth
+            : groupRef.current?.clientHeight;
+
+        const deltaAsPercent = (delta / size!) * 100;
+
         const splitterIndex = splitters.findIndex(
           (splitter) => splitter === id
         );
@@ -107,25 +114,74 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
             panels,
             prevPanelSizes,
             splitterIndex,
-            delta
+            deltaAsPercent
           );
         });
       },
-      [splitters, setPanels]
+      [splitters]
     );
 
-    const adjustSplitterByDelta = useCallback(
-      (id: string, delta: number) => {
-        const size =
-          direction === "horizontal"
-            ? groupRef.current?.clientWidth
-            : groupRef.current?.clientHeight;
+    const calculateSplitterBounds = useCallback(
+      (id: string) => {
+        const splitterIndex = splitters.findIndex(
+          (splitter) => splitter === id
+        );
 
-        const deltaAsPercent = (delta / size!) * 100;
+        if (splitterIndex === -1) {
+          return;
+        }
 
-        adjustSplitterByStep(id, deltaAsPercent);
+        if (direction === "horizontal") {
+          const groupWidth = groupRef.current?.clientWidth || 0;
+
+          const leftMinSize = panels
+            .slice(0, splitterIndex + 1)
+            .reduce(
+              (acc, panel) => acc + (groupWidth / 100) * panel.minSize,
+              0
+            );
+
+          const left =
+            panelSizes
+              .slice(0, splitterIndex + 1)
+              .reduce((acc, size) => acc + (groupWidth / 100) * size, 0) * -1;
+
+          const rightMinSize = panels
+            .slice(splitterIndex + 1)
+            .reduce(
+              (acc, panel) => acc + (groupWidth / 100) * panel.minSize,
+              0
+            );
+
+          const right = panelSizes
+            .slice(splitterIndex + 1)
+            .reduce((acc, size) => acc + (groupWidth / 100) * size, 0);
+
+          return { left: left + leftMinSize, right: right - rightMinSize };
+        }
+
+        const groupHeight = groupRef.current?.clientHeight || 0;
+
+        const topMinSize = panels
+          .slice(0, splitterIndex + 1)
+          .reduce((acc, panel) => acc + (groupHeight / 100) * panel.minSize, 0);
+
+        const top =
+          panelSizes
+            .slice(0, splitterIndex + 1)
+            .reduce((acc, size) => acc + (size / 100) * groupHeight, 0) * -1;
+
+        const bottomMinSize = panels
+          .slice(splitterIndex + 1)
+          .reduce((acc, panel) => acc + (groupHeight / 100) * panel.minSize, 0);
+
+        const bottom = panelSizes
+          .slice(splitterIndex + 1)
+          .reduce((acc, size) => acc + (size / 100) * groupHeight, 0);
+
+        return { top: top + topMinSize, bottom: bottom - bottomMinSize };
       },
-      [adjustSplitterByStep]
+      [panels, panelSizes, splitters, direction]
     );
 
     useLayoutEffect(() => {
@@ -142,8 +198,8 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
           registerPanel,
           unregisterPanel,
           registerSplitter,
-          adjustSplitterByStep,
           adjustSplitterByDelta,
+          calculateSplitterBounds,
         }}
       >
         <div
@@ -232,52 +288,30 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
       direction,
       registerSplitter,
       adjustSplitterByDelta,
-      adjustSplitterByStep,
       panels,
       panelSizes,
       splitters,
+      calculateSplitterBounds,
     } = useContext(PanelGroupContext);
 
     useEffect(() => {
       registerSplitter(id);
     }, [registerSplitter]);
 
-    useLayoutEffect(() => {
-      const handleKeyDown = ({ key }: KeyboardEvent) => {
-        if (direction === "horizontal") {
-          if (key === "ArrowLeft") {
-            adjustSplitterByStep(id, -step);
-          } else if (key === "ArrowRight") {
-            adjustSplitterByStep(id, step);
-          }
-        }
-
-        if (direction === "vertical") {
-          if (key === "ArrowUp") {
-            adjustSplitterByStep(id, -step);
-          } else if (key === "ArrowDown") {
-            adjustSplitterByStep(id, step);
-          }
-        }
-      };
-
-      if (splitterRef.current) {
-        splitterRef.current.addEventListener("keydown", handleKeyDown);
-      }
-
-      return () => {
-        if (splitterRef.current)
-          splitterRef.current.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [adjustSplitterByStep, direction, id]);
-
     useDrag(
-      ({ delta: [x, y] }) => {
-        adjustSplitterByDelta(id, direction === "horizontal" ? x : y);
+      ({ delta: [deltaX, deltaY] }) => {
+        if (direction === "horizontal" && deltaX !== 0) {
+          adjustSplitterByDelta(id, deltaX);
+        }
+
+        if (direction === "vertical" && deltaY !== 0) {
+          adjustSplitterByDelta(id, deltaY);
+        }
       },
       {
         target: splitterRef,
         enabled: !disabled,
+        bounds: calculateSplitterBounds(id),
       }
     );
 

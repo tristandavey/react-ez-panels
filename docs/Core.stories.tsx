@@ -20,6 +20,24 @@ export const Horizontal = () => (
   </div>
 );
 
+export const HorizontalMultiple = () => (
+  <div className="panel-group-wrapper">
+    <PanelGroup direction="horizontal" className="panel-group">
+      <Panel id="panel-1" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+      <Splitter id="splitter-1" className="splitter" />
+      <Panel id="panel-2" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+      <Splitter id="splitter-2" className="splitter" />
+      <Panel id="panel-3" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+    </PanelGroup>
+  </div>
+);
+
 export const Vertical = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="vertical" className="panel-group">
@@ -28,6 +46,24 @@ export const Vertical = () => (
       </Panel>
       <Splitter id="splitter-1" className="splitter" />
       <Panel id="panel-2" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+    </PanelGroup>
+  </div>
+);
+
+export const VerticalMultiple = () => (
+  <div className="panel-group-wrapper">
+    <PanelGroup direction="vertical" className="panel-group">
+      <Panel id="panel-1" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+      <Splitter id="splitter-1" className="splitter" />
+      <Panel id="panel-2" className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+      <Splitter id="splitter-2" className="splitter" />
+      <Panel id="panel-3" className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -95,8 +131,12 @@ export const MinSize = () => (
         <div className="panel__content">Min 50%</div>
       </Panel>
       <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
-        <div className="panel__content">Panel</div>
+      <Panel id="panel-2" className="panel" minSize={10}>
+        <div className="panel__content">Min 10%</div>
+      </Panel>
+      <Splitter id="splitter-2" className="splitter" />
+      <Panel id="panel-3" className="panel" minSize={10}>
+        <div className="panel__content">Min 10%</div>
       </Panel>
     </PanelGroup>
   </div>
