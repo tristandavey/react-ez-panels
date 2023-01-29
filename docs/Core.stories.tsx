@@ -9,11 +9,11 @@ export default {
 export const Horizontal = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -23,15 +23,15 @@ export const Horizontal = () => (
 export const HorizontalMultiple = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-2" className="splitter" />
-      <Panel id="panel-3" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -41,11 +41,11 @@ export const HorizontalMultiple = () => (
 export const Vertical = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="vertical" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -55,15 +55,15 @@ export const Vertical = () => (
 export const VerticalMultiple = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="vertical" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-2" className="splitter" />
-      <Panel id="panel-3" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -73,17 +73,17 @@ export const VerticalMultiple = () => (
 export const Nested = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2">
+      <Splitter className="splitter" />
+      <Panel>
         <PanelGroup direction="vertical">
-          <Panel id="panel-2-1" className="panel">
+          <Panel className="panel">
             <div className="panel__content">Panel</div>
           </Panel>
-          <Splitter id="splitter-2-1" className="splitter" />
-          <Panel id="panel-2-2" className="panel">
+          <Splitter className="splitter" />
+          <Panel className="panel">
             <div className="panel__content">Panel</div>
           </Panel>
         </PanelGroup>
@@ -95,11 +95,11 @@ export const Nested = () => (
 export const Disabled = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" disabled />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" disabled />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>
@@ -109,15 +109,15 @@ export const Disabled = () => (
 export const InitialSize = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel">
+      <Panel className="panel">
         <div className="panel__content">Initial Remaining%</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel" initialSize={65}>
+      <Splitter className="splitter" />
+      <Panel className="panel" initialSize={65}>
         <div className="panel__content">Initial 65%</div>
       </Panel>
-      <Splitter id="splitter-2" className="splitter" />
-      <Panel id="panel-3" className="panel" initialSize={25}>
+      <Splitter className="splitter" />
+      <Panel className="panel" initialSize={25}>
         <div className="panel__content">Initial 25%</div>
       </Panel>
     </PanelGroup>
@@ -127,15 +127,15 @@ export const InitialSize = () => (
 export const MinSize = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel" minSize={50}>
+      <Panel className="panel" minSize={50}>
         <div className="panel__content">Min 50%</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel" minSize={10}>
+      <Splitter className="splitter" />
+      <Panel className="panel" minSize={10}>
         <div className="panel__content">Min 10%</div>
       </Panel>
-      <Splitter id="splitter-2" className="splitter" />
-      <Panel id="panel-3" className="panel" minSize={10}>
+      <Splitter className="splitter" />
+      <Panel className="panel" minSize={10}>
         <div className="panel__content">Min 10%</div>
       </Panel>
     </PanelGroup>
@@ -145,11 +145,11 @@ export const MinSize = () => (
 export const MaxSize = () => (
   <div className="panel-group-wrapper">
     <PanelGroup direction="horizontal" className="panel-group">
-      <Panel id="panel-1" className="panel" maxSize={25}>
+      <Panel className="panel" maxSize={25}>
         <div className="panel__content">Max 25%</div>
       </Panel>
-      <Splitter id="splitter-1" className="splitter" />
-      <Panel id="panel-2" className="panel">
+      <Splitter className="splitter" />
+      <Panel className="panel">
         <div className="panel__content">Panel</div>
       </Panel>
     </PanelGroup>

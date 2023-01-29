@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -221,7 +222,7 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
 );
 
 export interface PanelProps {
-  id: string;
+  id?: string;
   initialSize?: number;
   minSize?: number;
   maxSize?: number;
@@ -234,18 +235,32 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
   { id, children, initialSize, minSize = 0, maxSize = 100, style, ...props },
   ref
 ) {
+  const internalId = useInternalId(id);
+
   const { registerPanel, unregisterPanel, panels, panelSizes, direction } =
     useContext(PanelGroupContext);
 
   useEffect(() => {
-    registerPanel(id, { id, initialSize, minSize, maxSize });
+    registerPanel(internalId, {
+      id: internalId,
+      initialSize,
+      minSize,
+      maxSize,
+    });
 
     return () => {
-      unregisterPanel(id);
+      unregisterPanel(internalId);
     };
-  }, [id, initialSize, minSize, maxSize, registerPanel, unregisterPanel]);
+  }, [
+    internalId,
+    initialSize,
+    minSize,
+    maxSize,
+    registerPanel,
+    unregisterPanel,
+  ]);
 
-  const panelIndex = panels.findIndex((panel) => panel.id === id);
+  const panelIndex = panels.findIndex((panel) => panel.id === internalId);
 
   if (panelIndex === -1) {
     return null;
@@ -255,7 +270,7 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
 
   return (
     <div
-      id={id}
+      id={internalId}
       ref={ref}
       style={{
         ...style,
@@ -273,16 +288,16 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
 });
 
 export interface SplitterProps {
-  id: string;
+  id?: string;
   className?: string;
   style?: CSSProperties;
-
   step?: number;
   disabled?: boolean;
 }
 
 export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
   function Splitter({ id, step = 10, style, disabled, ...props }, ref) {
+    const internalId = useInternalId(id);
     const splitterRef = useRef<HTMLDivElement>(null);
     const {
       direction,
@@ -295,27 +310,29 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
     } = useContext(PanelGroupContext);
 
     useEffect(() => {
-      registerSplitter(id);
+      registerSplitter(internalId);
     }, [registerSplitter]);
 
     useDrag(
       ({ delta: [deltaX, deltaY] }) => {
         if (direction === "horizontal" && deltaX !== 0) {
-          adjustSplitterByDelta(id, deltaX);
+          adjustSplitterByDelta(internalId, deltaX);
         }
 
         if (direction === "vertical" && deltaY !== 0) {
-          adjustSplitterByDelta(id, deltaY);
+          adjustSplitterByDelta(internalId, deltaY);
         }
       },
       {
         target: splitterRef,
         enabled: !disabled,
-        bounds: calculateSplitterBounds(id),
+        bounds: calculateSplitterBounds(internalId),
       }
     );
 
-    const splitterIndex = splitters.findIndex((splitter) => splitter === id);
+    const splitterIndex = splitters.findIndex(
+      (splitter) => splitter === internalId
+    );
 
     const curValue =
       panelSizes.slice(0, splitterIndex).reduce((acc, size) => acc + size, 0) +
@@ -333,6 +350,7 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
 
     return (
       <div
+        id={internalId}
         ref={splitterRef}
         role="separator"
         aria-orientation={
@@ -356,3 +374,8 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
     );
   }
 );
+
+function useInternalId(id?: string) {
+  const internalId = useId();
+  return id || internalId;
+}
