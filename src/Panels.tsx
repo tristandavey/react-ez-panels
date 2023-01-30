@@ -326,7 +326,7 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
       {
         target: splitterRef,
         enabled: !disabled,
-        bounds: calculateSplitterBounds(internalId),
+        // bounds: calculateSplitterBounds(internalId),
       }
     );
 
