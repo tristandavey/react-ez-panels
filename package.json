@@ -11,7 +11,7 @@
     "build": "rollup -c",
     "watch": "rollup -cw",
     "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook"
+    "build-storybook": "build-storybook -o dist/storybook"
   },
   "devDependencies": {
     "@babel/core": "^7.20.7",
