@@ -1,0 +1,19 @@
+.non-collapsible-heading-panel {
+  min-height: 3.75rem;
+}
+
+.non-collapsible-heading-panel .panel__content {
+  padding: 0;
+}
+
+.non-collapsible-heading-panel .panel__title {
+  padding: 1rem;
+  background-color: #eee;
+  border-bottom: 1px solid #000;
+  margin: 0;
+  height: 3.75rem;
+}
+
+.non-collapsible-heading-panel .panel__inner {
+  padding: 1rem;
+}

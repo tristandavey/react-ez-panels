@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 .panel-group-wrapper {
   height: 500px;
 }
@@ -8,10 +12,15 @@
 
 .panel {
   border: 1px solid #000;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel__content {
   padding: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .splitter {
@@ -37,4 +46,16 @@
 .splitter[aria-disabled] {
   cursor: not-allowed;
   background-color: red;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.panel__inner {
+  overflow-y: auto;
 }
