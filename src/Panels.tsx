@@ -27,8 +27,7 @@ interface PanelGroupContextSchema {
   registerPanel: (id: string, data: InternalPanelData) => void;
   unregisterPanel: (id: string) => void;
   registerSplitter: (id: string) => void;
-  adjustSplitterByDelta: (id: string, delta: number) => void;
-  calculateSplitterBounds: (id: string) => Bounds | undefined;
+  moveSplitter: (id: string, delta: number) => void;
 }
 
 const PanelGroupContext = createContext<PanelGroupContextSchema>({
@@ -39,8 +38,7 @@ const PanelGroupContext = createContext<PanelGroupContextSchema>({
   registerPanel: () => undefined,
   unregisterPanel: () => undefined,
   registerSplitter: () => undefined,
-  adjustSplitterByDelta: () => undefined,
-  calculateSplitterBounds: () => undefined,
+  moveSplitter: () => undefined,
 });
 
 export interface InternalPanelData {
@@ -93,14 +91,23 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
       });
     }, []);
 
-    const adjustSplitterByDelta = useCallback(
+    const moveSplitter = useCallback(
       (id: string, delta: number) => {
-        const size =
-          direction === "horizontal"
-            ? groupRef.current?.clientWidth
-            : groupRef.current?.clientHeight;
+        if (!groupRef.current) {
+          return;
+        }
 
-        const deltaAsPercent = (delta / size!) * 100;
+        let deltaAsPercent = 0;
+
+        if (direction === "horizontal") {
+          const groupWidth = groupRef.current?.clientWidth || 0;
+          deltaAsPercent = (delta / groupWidth) * 100;
+        }
+
+        if (direction === "vertical") {
+          const groupHeight = groupRef.current?.clientHeight || 0;
+          deltaAsPercent = (delta / groupHeight) * 100;
+        }
 
         const splitterIndex = splitters.findIndex(
           (splitter) => splitter === id
@@ -122,69 +129,6 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
       [splitters]
     );
 
-    const calculateSplitterBounds = useCallback(
-      (id: string) => {
-        const splitterIndex = splitters.findIndex(
-          (splitter) => splitter === id
-        );
-
-        if (splitterIndex === -1) {
-          return;
-        }
-
-        if (direction === "horizontal") {
-          const groupWidth = groupRef.current?.clientWidth || 0;
-
-          const leftMinSize = panels
-            .slice(0, splitterIndex + 1)
-            .reduce(
-              (acc, panel) => acc + (groupWidth / 100) * panel.minSize,
-              0
-            );
-
-          const left =
-            panelSizes
-              .slice(0, splitterIndex + 1)
-              .reduce((acc, size) => acc + (groupWidth / 100) * size, 0) * -1;
-
-          const rightMinSize = panels
-            .slice(splitterIndex + 1)
-            .reduce(
-              (acc, panel) => acc + (groupWidth / 100) * panel.minSize,
-              0
-            );
-
-          const right = panelSizes
-            .slice(splitterIndex + 1)
-            .reduce((acc, size) => acc + (groupWidth / 100) * size, 0);
-
-          return { left: left + leftMinSize, right: right - rightMinSize };
-        }
-
-        const groupHeight = groupRef.current?.clientHeight || 0;
-
-        const topMinSize = panels
-          .slice(0, splitterIndex + 1)
-          .reduce((acc, panel) => acc + (groupHeight / 100) * panel.minSize, 0);
-
-        const top =
-          panelSizes
-            .slice(0, splitterIndex + 1)
-            .reduce((acc, size) => acc + (size / 100) * groupHeight, 0) * -1;
-
-        const bottomMinSize = panels
-          .slice(splitterIndex + 1)
-          .reduce((acc, panel) => acc + (groupHeight / 100) * panel.minSize, 0);
-
-        const bottom = panelSizes
-          .slice(splitterIndex + 1)
-          .reduce((acc, size) => acc + (size / 100) * groupHeight, 0);
-
-        return { top: top + topMinSize, bottom: bottom - bottomMinSize };
-      },
-      [panels, panelSizes, splitters, direction]
-    );
-
     useLayoutEffect(() => {
       setPanelSizes(calculateInitialPanelSizes(panels));
     }, [panels]);
@@ -199,8 +143,7 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
           registerPanel,
           unregisterPanel,
           registerSplitter,
-          adjustSplitterByDelta,
-          calculateSplitterBounds,
+          moveSplitter,
         }}
       >
         <div
@@ -291,22 +234,20 @@ export interface SplitterProps {
   id?: string;
   className?: string;
   style?: CSSProperties;
-  step?: number;
   disabled?: boolean;
 }
 
 export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
-  function Splitter({ id, step = 10, style, disabled, ...props }, ref) {
+  function Splitter({ id, style, disabled, ...props }, ref) {
     const internalId = useInternalId(id);
     const splitterRef = useRef<HTMLDivElement>(null);
     const {
       direction,
       registerSplitter,
-      adjustSplitterByDelta,
+      moveSplitter,
       panels,
       panelSizes,
       splitters,
-      calculateSplitterBounds,
     } = useContext(PanelGroupContext);
 
     useEffect(() => {
@@ -314,19 +255,25 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
     }, [registerSplitter]);
 
     useDrag(
-      ({ delta: [deltaX, deltaY] }) => {
+      ({ xy: [x, y] }) => {
+        if (!splitterRef.current) {
+          return;
+        }
+
+        const deltaX = Math.round(x - splitterRef.current.offsetLeft);
+        const deltaY = Math.round(y - splitterRef.current.offsetTop);
+
         if (direction === "horizontal" && deltaX !== 0) {
-          adjustSplitterByDelta(internalId, deltaX);
+          moveSplitter(internalId, deltaX);
         }
 
         if (direction === "vertical" && deltaY !== 0) {
-          adjustSplitterByDelta(internalId, deltaY);
+          moveSplitter(internalId, deltaY);
         }
       },
       {
         target: splitterRef,
         enabled: !disabled,
-        // bounds: calculateSplitterBounds(internalId),
       }
     );
 
