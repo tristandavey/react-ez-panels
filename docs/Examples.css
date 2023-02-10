@@ -17,3 +17,46 @@
 .non-collapsible-heading-panel .panel__inner {
   padding: 1rem;
 }
+
+.style-by-size .panel[data-size="0"] {
+  border: 0;
+}
+
+.style-by-size .splitter:before {
+  content: "";
+  position: absolute;
+  display: block;
+  align-items: center;
+  justify-content: center;
+  top: 50%;
+  width: 0.5rem;
+  height: 2rem;
+  background-color: #fff;
+  border: 2px solid #000;
+  opacity: 0;
+}
+
+.style-by-size .splitter:hover:before {
+  background-color: #000;
+}
+
+.style-by-size .splitter[data-start-panel-size="0"],
+.style-by-size .splitter[data-end-panel-size="0"] {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.style-by-size .splitter[data-start-panel-size="0"]:before,
+.style-by-size .splitter[data-end-panel-size="0"]:before {
+  opacity: 1;
+}
+
+.style-by-size .splitter[data-start-panel-size="0"]:before {
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.style-by-size .splitter[data-end-panel-size="0"]:before {
+  right: 0;
+  transform: translate(50%, -50%);
+}

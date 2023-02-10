@@ -15,6 +15,7 @@ import {
 import {
   calculateInitialPanelSizes,
   calculatePanelSizes,
+  XY,
 } from "./Panels.utils";
 
 export type PanelGroupDirection = "horizontal" | "vertical";
@@ -23,11 +24,11 @@ interface PanelGroupContextSchema {
   direction: PanelGroupDirection;
   panels: InternalPanelData[];
   panelSizes: number[];
-  splitters: string[];
+  splitters: InternalSplitterData[];
   registerPanel: (id: string, data: InternalPanelData) => void;
   unregisterPanel: (id: string) => void;
-  registerSplitter: (id: string) => void;
-  moveSplitter: (id: string, delta: number) => void;
+  registerSplitter: (id: string, ref: HTMLDivElement) => void;
+  moveSplitter: (id: string, pointer: XY, delta: XY, dragging: boolean) => void;
 }
 
 const PanelGroupContext = createContext<PanelGroupContextSchema>({
@@ -43,9 +44,16 @@ const PanelGroupContext = createContext<PanelGroupContextSchema>({
 
 export interface InternalPanelData {
   id: string;
+  ref: HTMLDivElement;
   minSize: number;
+  minSizeSnap: boolean;
   maxSize: number;
   initialSize?: number;
+}
+
+export interface InternalSplitterData {
+  id: string;
+  ref: HTMLDivElement;
 }
 
 export interface PanelGroupProps {
@@ -60,8 +68,8 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
     const groupRef = useRef<HTMLDivElement>(null);
 
     const [panels, setPanels] = useState<InternalPanelData[]>([]);
+    const [splitters, setSplitters] = useState<InternalSplitterData[]>([]);
     const [panelSizes, setPanelSizes] = useState<number[]>([]);
-    const [splitters, setSplitters] = useState<string[]>([]);
 
     const registerPanel = useCallback((id: string, data: InternalPanelData) => {
       setPanels((prevPanels) => {
@@ -85,45 +93,32 @@ export const PanelGroup = forwardRef<HTMLDivElement, PanelGroupProps>(
       });
     }, []);
 
-    const registerSplitter = useCallback((id: string) => {
+    const registerSplitter = useCallback((id: string, ref: HTMLDivElement) => {
       setSplitters((prevSplitters) => {
-        return [...prevSplitters, id];
+        return [
+          ...prevSplitters,
+          {
+            id,
+            ref,
+          },
+        ];
       });
     }, []);
 
     const moveSplitter = useCallback(
-      (id: string, delta: number) => {
-        if (!groupRef.current) {
-          return;
-        }
-
-        let deltaAsPercent = 0;
-
-        if (direction === "horizontal") {
-          const groupWidth = groupRef.current?.clientWidth || 0;
-          deltaAsPercent = (delta / groupWidth) * 100;
-        }
-
-        if (direction === "vertical") {
-          const groupHeight = groupRef.current?.clientHeight || 0;
-          deltaAsPercent = (delta / groupHeight) * 100;
-        }
-
-        const splitterIndex = splitters.findIndex(
-          (splitter) => splitter === id
-        );
-
-        if (splitterIndex === -1) {
-          return;
-        }
-
+      (id: string, pointer: XY, delta: XY, dragging: boolean) => {
         setPanelSizes((prevPanelSizes) => {
-          return calculatePanelSizes(
+          return calculatePanelSizes({
             panels,
-            prevPanelSizes,
-            splitterIndex,
-            deltaAsPercent
-          );
+            panelSizes: prevPanelSizes,
+            splitters,
+            splitterId: id,
+            pointer,
+            delta,
+            direction,
+            groupRef: groupRef.current!,
+            dragging,
+          });
         });
       },
       [splitters]
@@ -168,6 +163,7 @@ export interface PanelProps {
   id?: string;
   initialSize?: number;
   minSize?: number;
+  minSizeSnap?: boolean;
   maxSize?: number;
   children?: ReactNode;
   style?: CSSProperties;
@@ -175,19 +171,31 @@ export interface PanelProps {
 }
 
 export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
-  { id, children, initialSize, minSize = 0, maxSize = 100, style, ...props },
+  {
+    id,
+    children,
+    initialSize,
+    minSize = 0,
+    minSizeSnap = false,
+    maxSize = 100,
+    style,
+    ...props
+  },
   ref
 ) {
   const internalId = useInternalId(id);
+  const internalRef = useRef<HTMLDivElement>(null);
 
   const { registerPanel, unregisterPanel, panels, panelSizes, direction } =
     useContext(PanelGroupContext);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     registerPanel(internalId, {
       id: internalId,
+      ref: internalRef.current!,
       initialSize,
       minSize,
+      minSizeSnap,
       maxSize,
     });
 
@@ -204,17 +212,13 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
   ]);
 
   const panelIndex = panels.findIndex((panel) => panel.id === internalId);
-
-  if (panelIndex === -1) {
-    return null;
-  }
-
-  const size = panelSizes[panelIndex];
+  const size = panelSizes[panelIndex] > -1 ? panelSizes[panelIndex] : 0;
 
   return (
     <div
+      {...props}
       id={internalId}
-      ref={ref}
+      ref={internalRef}
       style={{
         ...style,
         flexBasis: 0,
@@ -223,7 +227,7 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(function Panel(
         overflowX: direction === "horizontal" ? "hidden" : undefined,
         overflowY: direction === "horizontal" ? undefined : "hidden",
       }}
-      {...props}
+      data-size={size}
     >
       {children}
     </div>
@@ -234,6 +238,7 @@ export interface SplitterProps {
   id?: string;
   className?: string;
   style?: CSSProperties;
+  children?: ReactNode;
   disabled?: boolean;
 }
 
@@ -250,26 +255,13 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
       splitters,
     } = useContext(PanelGroupContext);
 
-    useEffect(() => {
-      registerSplitter(internalId);
+    useLayoutEffect(() => {
+      registerSplitter(internalId, splitterRef.current!);
     }, [registerSplitter]);
 
     useDrag(
-      ({ xy: [x, y] }) => {
-        if (!splitterRef.current) {
-          return;
-        }
-
-        const deltaX = Math.round(x - splitterRef.current.offsetLeft);
-        const deltaY = Math.round(y - splitterRef.current.offsetTop);
-
-        if (direction === "horizontal" && deltaX !== 0) {
-          moveSplitter(internalId, deltaX);
-        }
-
-        if (direction === "vertical" && deltaY !== 0) {
-          moveSplitter(internalId, deltaY);
-        }
+      ({ xy: [x, y], delta: [deltaX, deltaY], pressed }) => {
+        return moveSplitter(internalId, [x, y], [deltaX, deltaY], pressed);
       },
       {
         target: splitterRef,
@@ -278,7 +270,7 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
     );
 
     const splitterIndex = splitters.findIndex(
-      (splitter) => splitter === internalId
+      (splitter) => splitter.id === internalId
     );
 
     const curValue =
@@ -289,32 +281,35 @@ export const Splitter = forwardRef<HTMLDivElement, SplitterProps>(
       .slice(0, splitterIndex + 1)
       .reduce((acc, panel) => acc + (panel.minSize || 0), 0);
 
+    const startPanelSize = panelSizes[splitterIndex] || 0;
+    const endPanelSize = panelSizes[splitterIndex + 1] || 0;
+
     const maxValue =
       100 -
       panels
         .slice(splitterIndex + 1)
         .reduce((acc, panel) => acc + (panel.minSize || 0), 0);
 
+    const orientation = direction === "horizontal" ? "vertical" : "horizontal";
+    const cursor = direction === "horizontal" ? "ew-resize" : "ns-resize";
+
     return (
       <div
         id={internalId}
         ref={splitterRef}
         role="separator"
-        aria-orientation={
-          direction === "horizontal" ? "vertical" : "horizontal"
-        }
+        aria-orientation={orientation}
         aria-valuenow={curValue}
         aria-valuemin={minValue}
         aria-valuemax={maxValue}
         aria-disabled={disabled || undefined}
+        data-start-panel-size={startPanelSize}
+        data-end-panel-size={endPanelSize}
         tabIndex={disabled ? undefined : 0}
         style={{
           ...style,
           touchAction: "none",
-          cursor:
-            (!disabled &&
-              (direction === "horizontal" ? "ew-resize" : "ns-resize")) ||
-            undefined,
+          cursor: disabled ? undefined : cursor,
         }}
         {...props}
       />

@@ -70,3 +70,17 @@ export const NonCollapsibleHeadings = () => (
     </PanelGroup>
   </div>
 );
+
+export const StyledBySize = () => (
+  <div className="panel-group-wrapper style-by-size">
+    <PanelGroup direction="horizontal" className="panel-group">
+      <Panel className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+      <Splitter className="splitter" />
+      <Panel className="panel">
+        <div className="panel__content">Panel</div>
+      </Panel>
+    </PanelGroup>
+  </div>
+);

@@ -1,6 +1,226 @@
-import { InternalPanelData } from "./Panels";
+import { InternalPanelData, InternalSplitterData } from "./Panels";
 
-export function calculatePanelSizes(
+export type XY = [x: number, y: number];
+
+interface CalculateOptions {
+  panels: InternalPanelData[];
+  panelSizes: number[];
+  splitters: InternalSplitterData[];
+  splitterId: string;
+  pointer: XY;
+  delta: XY;
+  direction: "horizontal" | "vertical";
+  groupRef: HTMLDivElement;
+  dragging: boolean;
+}
+
+export function calculatePanelSizes(options: CalculateOptions): number[] {
+  const splitterIndex = options.splitters.findIndex(
+    ({ id }) => id === options.splitterId
+  );
+  const splitter = options.splitters[splitterIndex];
+
+  if (!splitter) {
+    return options.panelSizes;
+  }
+
+  const snappedPanels = calculateSnappedPanels(options);
+
+  if (snappedPanels) {
+    return snappedPanels;
+  }
+
+  const delta = calculatePercentageDelta(
+    options.delta,
+    options.pointer,
+    splitter.ref,
+    options.groupRef,
+    options.direction
+  );
+
+  return calculateSizesFromDeltaPercentage(
+    options.panels,
+    options.panelSizes,
+    splitterIndex,
+    delta
+  );
+}
+
+function calculateSnappedPanels(options: CalculateOptions): number[] | null {
+  const nextPanelSizes = [...options.panelSizes];
+  const [x, y] = options.pointer;
+  const [deltaX, deltaY] = options.delta;
+
+  const splitterIndex = options.splitters.findIndex(
+    ({ id }) => id === options.splitterId
+  );
+
+  const startPanel = options.panels[splitterIndex];
+  const startPanelSize = options.panelSizes[splitterIndex];
+  const endPanel = options.panels[splitterIndex + 1];
+  const endPanelSize = options.panelSizes[splitterIndex + 1];
+
+  if (options.direction === "horizontal") {
+    if (deltaX < 0) {
+      const startSnapPoint =
+        startPanel.ref.offsetLeft + startPanel.ref.offsetWidth / 2;
+      const canSnapStart =
+        startPanel.minSizeSnap && startPanelSize === startPanel.minSize;
+      const hitStartSnap = x < startSnapPoint;
+
+      if (canSnapStart && hitStartSnap) {
+        nextPanelSizes[splitterIndex] = -1;
+        nextPanelSizes[splitterIndex + 1] += startPanelSize;
+        return nextPanelSizes;
+      }
+
+      if (startPanelSize === -1) {
+        return nextPanelSizes;
+      }
+
+      const endSnapPoint =
+        endPanel.ref.offsetLeft -
+        ((options.groupRef.offsetWidth / 100) * endPanel.minSize) / 2;
+      const shouldSnapEnd = endPanel.minSizeSnap && endPanelSize === -1;
+      const hitEndSnap = x < endSnapPoint;
+
+      if (shouldSnapEnd) {
+        if (hitEndSnap) {
+          nextPanelSizes[splitterIndex + 1] = endPanel.minSize;
+          nextPanelSizes[splitterIndex] -= endPanel.minSize;
+        }
+
+        return nextPanelSizes;
+      }
+    }
+
+    if (deltaX > 0) {
+      const endSnapPoint =
+        endPanel.ref.offsetLeft + endPanel.ref.offsetWidth / 2;
+      const canSnapEnd =
+        endPanel.minSizeSnap && endPanelSize === endPanel.minSize;
+      const hitEndSnap = x > endSnapPoint;
+
+      if (canSnapEnd && hitEndSnap) {
+        nextPanelSizes[splitterIndex] += endPanelSize;
+        nextPanelSizes[splitterIndex + 1] = -1;
+        return nextPanelSizes;
+      }
+
+      if (endPanelSize === -1) {
+        return nextPanelSizes;
+      }
+
+      const startSnapPoint =
+        startPanel.ref.offsetLeft +
+        ((options.groupRef.offsetWidth / 100) * startPanel.minSize) / 2;
+      const shouldSnapStart = startPanel.minSizeSnap && startPanelSize === -1;
+      const hitStartSnap = x > startSnapPoint;
+
+      if (shouldSnapStart) {
+        if (hitStartSnap) {
+          nextPanelSizes[splitterIndex] = startPanel.minSize;
+          nextPanelSizes[splitterIndex + 1] -= startPanel.minSize;
+        }
+
+        return nextPanelSizes;
+      }
+    }
+  }
+
+  if (options.direction === "vertical") {
+    if (deltaY < 0) {
+      const startSnapPoint =
+        startPanel.ref.offsetTop + startPanel.ref.offsetHeight / 2;
+      const canSnapStart =
+        startPanel.minSizeSnap && startPanelSize === startPanel.minSize;
+      const hitStartSnap = y < startSnapPoint;
+
+      if (canSnapStart && hitStartSnap) {
+        nextPanelSizes[splitterIndex] = -1;
+        nextPanelSizes[splitterIndex + 1] += startPanelSize;
+        return nextPanelSizes;
+      }
+
+      if (startPanelSize === -1) {
+        return nextPanelSizes;
+      }
+
+      const endSnapPoint =
+        endPanel.ref.offsetTop -
+        ((options.groupRef.offsetHeight / 100) * endPanel.minSize) / 2;
+      const shouldSnapEnd = endPanel.minSizeSnap && endPanelSize === -1;
+      const hitEndSnap = y < endSnapPoint;
+
+      if (shouldSnapEnd) {
+        if (hitEndSnap) {
+          nextPanelSizes[splitterIndex + 1] = endPanel.minSize;
+          nextPanelSizes[splitterIndex] -= endPanel.minSize;
+        }
+
+        return nextPanelSizes;
+      }
+    }
+
+    if (deltaY > 0) {
+      const endSnapPoint =
+        endPanel.ref.offsetTop + endPanel.ref.offsetHeight / 2;
+      const canSnapEnd =
+        endPanel.minSizeSnap && endPanelSize === endPanel.minSize;
+      const hitEndSnap = y > endSnapPoint;
+
+      if (canSnapEnd && hitEndSnap) {
+        nextPanelSizes[splitterIndex] += endPanelSize;
+        nextPanelSizes[splitterIndex + 1] = -1;
+        return nextPanelSizes;
+      }
+
+      if (endPanelSize === -1) {
+        return nextPanelSizes;
+      }
+
+      const startSnapPoint =
+        startPanel.ref.offsetTop +
+        ((options.groupRef.offsetHeight / 100) * startPanel.minSize) / 2;
+      const shouldSnapStart = startPanel.minSizeSnap && startPanelSize === -1;
+
+      const hitStartSnap = y > startSnapPoint;
+
+      if (shouldSnapStart) {
+        if (hitStartSnap) {
+          nextPanelSizes[splitterIndex] = startPanel.minSize;
+          nextPanelSizes[splitterIndex + 1] -= startPanel.minSize;
+        }
+
+        return nextPanelSizes;
+      }
+    }
+  }
+
+  if (deltaX === 0 && deltaY === 0) {
+    return nextPanelSizes;
+  }
+
+  return null;
+}
+
+function calculatePercentageDelta(
+  [deltaX, deltaY]: XY,
+  [x, y]: XY,
+  splitterRef: HTMLDivElement,
+  groupRef: HTMLDivElement,
+  direction: "horizontal" | "vertical"
+) {
+  if (direction === "horizontal") {
+    const delta = x === 0 ? deltaX : Math.round(x - splitterRef.offsetLeft);
+    return (delta / groupRef.offsetWidth) * 100;
+  }
+
+  const delta = y === 0 ? deltaY : Math.round(y - splitterRef.offsetTop);
+  return (delta / groupRef.offsetHeight) * 100;
+}
+
+function calculateSizesFromDeltaPercentage(
   panels: InternalPanelData[],
   panelSizes: number[],
   splitterIndex: number,
@@ -24,6 +244,11 @@ export function calculatePanelSizes(
         break;
       }
 
+      if (startPanelSize === -1) {
+        startPanelIndex--;
+        continue;
+      }
+
       const startPanelMinSize = startPanel.minSize;
       const endPanelMinSize = endPanel.minSize;
       const endPanelMaxSize = endPanel.maxSize;
@@ -33,7 +258,7 @@ export function calculatePanelSizes(
         startPanelSize - startPanelMinSize
       );
 
-      let endPanelDelta = Math.min(
+      const endPanelDelta = Math.min(
         remainingDelta,
         endPanelMaxSize - endPanelSize
       );
@@ -75,6 +300,11 @@ export function calculatePanelSizes(
         break;
       }
 
+      if (endPanelSize === -1) {
+        endPanelIndex++;
+        continue;
+      }
+
       const startPanelMinSize = startPanel.minSize;
       const startPanelMaxSize = startPanel.maxSize;
       const endPanelMinSize = endPanel.minSize;
@@ -84,7 +314,7 @@ export function calculatePanelSizes(
         startPanelMaxSize - startPanelSize
       );
 
-      let endPanelDelta = Math.min(
+      const endPanelDelta = Math.min(
         remainingDelta,
         endPanelSize - endPanelMinSize
       );
