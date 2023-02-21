@@ -7,6 +7,13 @@
   "main": "dist/react-ez-panels.js",
   "module": "dist/react-ez-panels.mjs",
   "typings": "dist/react-ez-panels.d.ts",
+  "files": [
+    "dist/*.mjs",
+    "dist/*.mjs.map",
+    "dist/*.js",
+    "dist/*.js.map",
+    "dist/*.d.ts"
+  ],
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -cw",
